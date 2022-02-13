@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nginx2
+  name: nginx2
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx2
+  template:
+    metadata:
+      labels:
+        app: nginx2
+    spec:
+      containers:
+      - image: nginx:latest
+        name: nginx2
+        ports:
+        - containerPort: 80
+        volumeMounts:
+          - name: config-nginx
+            mountPath: /etc/nginx/conf.d/default.conf
+            subPath: default.conf
+      volumes:
+        - name: config-nginx
+          configMap:
+            name: nginx2-configmap
+---
+
+apiVersion: v1
+data:
+  default.conf: |-
+    server {
+        listen 80 default_server;
+        server_name _;
+        default_type text/plain;
+
+        location / {
+            return 200 'nginx2\n';
+        }
+    }
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: nginx2-configmap
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: nginx2
+  name: nginx2-np
+spec:
+  type: NodePort
+  selector:
+    app: nginx2
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
